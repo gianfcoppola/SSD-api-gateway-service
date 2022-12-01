@@ -3,32 +3,40 @@ package com.gianfcop.ssd.security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper;
-import org.springframework.security.core.session.SessionRegistryImpl;
-import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
-import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
+import org.springframework.security.oauth2.client.oidc.web.server.logout.OidcClientInitiatedServerLogoutSuccessHandler;
+import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
 import org.springframework.security.web.server.SecurityWebFilterChain;
-import org.springframework.security.web.server.csrf.CookieServerCsrfTokenRepository;
+import org.springframework.security.web.server.authentication.logout.ServerLogoutSuccessHandler;
 
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
+    @Autowired
+    private GatewayAuthenticationSuccessHandler gatewayAuthenticationSuccessHandler;
+
     @Bean
-    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http)
+    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http, ServerLogoutSuccessHandler handler)
     {
         http.csrf().disable()
                 .authorizeExchange()
+                .pathMatchers("/index.html", "/images/**", "/prenotazioni/index", "prenotazioni/index.html").permitAll()
                 .anyExchange()
                 .authenticated()
-                .and().oauth2Login()
+                .and().oauth2Login().authenticationSuccessHandler(gatewayAuthenticationSuccessHandler)
+                .and().logout().logoutSuccessHandler(handler)
                 .and().oauth2ResourceServer().jwt();
         return http.build();
+    }
+
+
+    @Bean
+    public ServerLogoutSuccessHandler keycloakLogoutSuccessHandler(ReactiveClientRegistrationRepository repository){
+        OidcClientInitiatedServerLogoutSuccessHandler oidcLogoutSuccessHandler = new OidcClientInitiatedServerLogoutSuccessHandler(repository);
+        oidcLogoutSuccessHandler.setPostLogoutRedirectUri("{baseUrl}/prenotazioni/index");
+
+        return oidcLogoutSuccessHandler;
     }
 }
