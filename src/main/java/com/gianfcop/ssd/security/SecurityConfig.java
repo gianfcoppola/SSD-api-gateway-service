@@ -25,7 +25,7 @@ public class SecurityConfig {
                 .pathMatchers("/index.html", "/images/**", "/prenotazioni/index", "prenotazioni/index.html").permitAll()
                 .anyExchange()
                 .authenticated()
-                .and().oauth2Login().authenticationSuccessHandler(gatewayAuthenticationSuccessHandler)
+                .and().oauth2Login()//.authenticationSuccessHandler(gatewayAuthenticationSuccessHandler)
                 .and().logout().logoutSuccessHandler(handler)
                 .and().oauth2ResourceServer().jwt();
         return http.build();
